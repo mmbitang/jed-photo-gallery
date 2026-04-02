@@ -1,6 +1,6 @@
 const CONFIG = {
-  API_KEY: "YOUR_API_KEY",
-  ROOT_FOLDER_ID: "YOUR_ROOT_FOLDER_ID",
+  API_KEY: "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",
+  ROOT_FOLDER_ID: "1dsZXZFAf3rRK0L99ICgLBfBlgRd8r4Od",
 };
 
 const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
