@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jed Photo Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">Static GitHub Gallery</p>
+      <h1>Google Drive photo archive with real folder browsing.</h1>
+      <p class="intro">
+        This site indexes one public Google Drive root folder, preserves the folder tree,
+        and provides global search across every image found under it.
+      </p>
+      <div class="hero-meta">
+        <span id="statusBadge" class="status-badge">Waiting for configuration</span>
+        <span id="statsText" class="stats-text">0 folders · 0 photos</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="toolbar" aria-label="Gallery controls">
+        <label class="search-field" for="searchInput">
+          <span>Search all photos</span>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search by file name or folder path"
+            autocomplete="off"
+          >
+        </label>
+        <button id="clearSearchButton" class="ghost-button" type="button">Clear search</button>
+      </section>
+
+      <nav id="breadcrumbs" class="breadcrumbs" aria-label="Breadcrumb"></nav>
+
+      <section id="message" class="message-panel" aria-live="polite"></section>
+
+      <section id="gallery" class="gallery-grid" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
