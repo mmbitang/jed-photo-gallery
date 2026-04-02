@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_KEY: "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",
+  API_KEY: "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B_lrrvDN36c",
   ROOT_FOLDER_ID: "1dsZXZFAf3rRK0L99ICgLBfBlgRd8r4Od",
 };
 
