@@ -21,13 +21,18 @@ const elements = {
   message: document.getElementById("message"),
   searchInput: document.getElementById("searchInput"),
   clearSearchButton: document.getElementById("clearSearchButton"),
+  themeButtons: Array.from(document.querySelectorAll("[data-theme-value]")),
   statusBadge: document.getElementById("statusBadge"),
   statsText: document.getElementById("statsText"),
 };
 
 elements.searchInput.addEventListener("input", handleSearchInput);
 elements.clearSearchButton.addEventListener("click", clearSearch);
+elements.themeButtons.forEach((button) => {
+  button.addEventListener("click", () => setTheme(button.dataset.themeValue));
+});
 
+initTheme();
 bootstrap().catch((error) => {
   renderError(error.message || "Unexpected startup failure.");
 });
@@ -70,6 +75,34 @@ function isConfigured() {
     CONFIG.API_KEY !== "YOUR_API_KEY" &&
     CONFIG.ROOT_FOLDER_ID !== "YOUR_ROOT_FOLDER_ID"
   );
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("gallery-theme") || "system";
+  setTheme(savedTheme, false);
+}
+
+function setTheme(theme, persist = true) {
+  const normalized = theme === "light" || theme === "dark" ? theme : "system";
+  const root = document.documentElement;
+
+  root.classList.remove("theme-light", "theme-dark");
+  if (normalized === "light" || normalized === "dark") {
+    root.classList.add(`theme-${normalized}`);
+    root.style.colorScheme = normalized;
+  } else {
+    root.style.colorScheme = "light dark";
+  }
+
+  if (persist) {
+    localStorage.setItem("gallery-theme", normalized);
+  }
+
+  elements.themeButtons.forEach((button) => {
+    const isActive = button.dataset.themeValue === normalized;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 async function crawlFolder(folderId, fallbackName) {

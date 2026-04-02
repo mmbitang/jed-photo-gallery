@@ -6,7 +6,7 @@
   <title>Jed Photo Gallery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -35,7 +35,14 @@
             autocomplete="off"
           >
         </label>
-        <button id="clearSearchButton" class="ghost-button" type="button">Clear search</button>
+        <div class="toolbar-actions">
+          <div class="theme-toggle" role="group" aria-label="Theme selection">
+            <button id="themeLightButton" class="theme-button" type="button" data-theme-value="light">Light</button>
+            <button id="themeDarkButton" class="theme-button" type="button" data-theme-value="dark">Dark</button>
+            <button id="themeSystemButton" class="theme-button is-active" type="button" data-theme-value="system">System</button>
+          </div>
+          <button id="clearSearchButton" class="ghost-button" type="button">Clear search</button>
+        </div>
       </section>
 
       <nav id="breadcrumbs" class="breadcrumbs" aria-label="Breadcrumb"></nav>
