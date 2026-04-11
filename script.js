@@ -13,6 +13,9 @@ const state = {
   currentFolderId: null,
   rootFolderName: "Root",
   isSearchMode: false,
+  visibleImages: [],
+  previewItems: [],
+  previewIndex: -1,
 };
 
 const elements = {
@@ -24,6 +27,15 @@ const elements = {
   themeButtons: Array.from(document.querySelectorAll("[data-theme-value]")),
   statusBadge: document.getElementById("statusBadge"),
   statsText: document.getElementById("statsText"),
+  previewModal: document.getElementById("previewModal"),
+  previewImage: document.getElementById("previewImage"),
+  previewTitle: document.getElementById("previewTitle"),
+  previewMeta: document.getElementById("previewMeta"),
+  previewThumbs: document.getElementById("previewThumbs"),
+  previewPrevButton: document.getElementById("previewPrevButton"),
+  previewNextButton: document.getElementById("previewNextButton"),
+  previewCloseButton: document.getElementById("previewCloseButton"),
+  previewDownload: document.getElementById("previewDownload"),
 };
 
 elements.searchInput.addEventListener("input", handleSearchInput);
@@ -31,6 +43,11 @@ elements.clearSearchButton.addEventListener("click", clearSearch);
 elements.themeButtons.forEach((button) => {
   button.addEventListener("click", () => setTheme(button.dataset.themeValue));
 });
+elements.previewPrevButton.addEventListener("click", showPreviousPreview);
+elements.previewNextButton.addEventListener("click", showNextPreview);
+elements.previewCloseButton.addEventListener("click", closePreview);
+elements.previewModal.addEventListener("click", handlePreviewBackdropClick);
+document.addEventListener("keydown", handleDocumentKeydown);
 
 initTheme();
 bootstrap().catch((error) => {
@@ -184,7 +201,9 @@ function rebuildDerivedData() {
     const parentId = item.parents && item.parents[0] ? item.parents[0] : CONFIG.ROOT_FOLDER_ID;
     const folderPathSegments = state.pathByFolderId.get(parentId) || [state.rootFolderName];
     item.folderPath = folderPathSegments.join(" / ");
-    item.thumbnailSrc = getImageSrc(item);
+    item.thumbnailSrc = getThumbnailSrc(item);
+    item.previewSrc = getPreviewSrc(item);
+    item.downloadSrc = getDownloadSrc(item);
     state.searchIndex.push(item);
   }
 
@@ -192,14 +211,23 @@ function rebuildDerivedData() {
   elements.statsText.textContent = `${folderCount} folders · ${state.searchIndex.length} photos`;
 }
 
-function getImageSrc(item) {
+function getThumbnailSrc(item) {
   if (item.thumbnailLink) {
     return item.thumbnailLink.replace(/=s\d+$/, "=s1200");
   }
   return `https://drive.google.com/thumbnail?id=${item.id}&sz=w1200`;
 }
 
+function getPreviewSrc(item) {
+  return `https://drive.google.com/uc?export=view&id=${item.id}`;
+}
+
+function getDownloadSrc(item) {
+  return `https://drive.google.com/uc?export=download&id=${item.id}`;
+}
+
 function handleSearchInput(event) {
+  closePreview();
   const term = event.target.value.trim().toLowerCase();
 
   if (!term) {
@@ -221,6 +249,7 @@ function handleSearchInput(event) {
 }
 
 function clearSearch() {
+  closePreview();
   elements.searchInput.value = "";
   state.isSearchMode = false;
   renderCurrentFolder();
@@ -236,6 +265,7 @@ function renderCurrentFolder() {
     .filter(Boolean)
     .sort(sortItems);
 
+  state.visibleImages = children.filter((item) => !item.isFolder);
   renderBreadcrumbs(getBreadcrumbSegments(currentFolderId));
 
   if (!children.length) {
@@ -251,15 +281,17 @@ function renderCurrentFolder() {
 }
 
 function renderSearchResults(matches, term) {
+  const sortedMatches = [...matches].sort((a, b) => a.name.localeCompare(b.name));
+  state.visibleImages = sortedMatches;
   renderMessage(`Found ${matches.length} result${matches.length === 1 ? "" : "s"} for "${term}".`);
 
-  if (!matches.length) {
+  if (!sortedMatches.length) {
     renderEmptyState("No photos matched your search.");
     return;
   }
 
   elements.gallery.innerHTML = "";
-  matches.sort((a, b) => a.name.localeCompare(b.name)).forEach((item) => {
+  sortedMatches.forEach((item) => {
     elements.gallery.appendChild(createImageCard(item, true));
   });
 }
@@ -275,6 +307,7 @@ function createFolderCard(item) {
     </div>
   `;
   article.addEventListener("click", () => {
+    closePreview();
     state.currentFolderId = item.id;
     if (!state.isSearchMode) {
       renderCurrentFolder();
@@ -296,9 +329,129 @@ function createImageCard(item, showPath) {
     </div>
   `;
   article.addEventListener("click", () => {
-    window.open(item.webViewLink, "_blank", "noopener");
+    openPreview(state.visibleImages, state.visibleImages.findIndex((candidate) => candidate.id === item.id));
   });
   return article;
+}
+
+function openPreview(items, startIndex) {
+  if (!Array.isArray(items) || !items.length || startIndex < 0) {
+    return;
+  }
+
+  state.previewItems = items;
+  state.previewIndex = startIndex;
+  elements.previewModal.hidden = false;
+  document.body.classList.add("modal-open");
+  renderPreview();
+}
+
+function closePreview() {
+  if (elements.previewModal.hidden) {
+    return;
+  }
+
+  elements.previewModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  state.previewItems = [];
+  state.previewIndex = -1;
+  elements.previewImage.removeAttribute("src");
+  elements.previewImage.alt = "";
+  elements.previewThumbs.innerHTML = "";
+}
+
+function renderPreview() {
+  const item = state.previewItems[state.previewIndex];
+  if (!item) {
+    closePreview();
+    return;
+  }
+
+  elements.previewImage.src = item.previewSrc;
+  elements.previewImage.alt = item.name;
+  elements.previewTitle.textContent = item.name;
+  elements.previewMeta.textContent = `${item.folderPath} · ${state.previewIndex + 1} of ${state.previewItems.length}`;
+  elements.previewDownload.href = item.downloadSrc;
+  elements.previewDownload.setAttribute("download", item.name);
+
+  elements.previewPrevButton.disabled = state.previewIndex <= 0;
+  elements.previewNextButton.disabled = state.previewIndex >= state.previewItems.length - 1;
+
+  renderPreviewThumbs();
+}
+
+function renderPreviewThumbs() {
+  elements.previewThumbs.innerHTML = "";
+
+  state.previewItems.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `preview-thumb${index === state.previewIndex ? " is-active" : ""}`;
+    button.setAttribute("aria-pressed", String(index === state.previewIndex));
+    button.innerHTML = `
+      <span class="preview-thumb-frame">
+        <img src="${escapeAttribute(item.thumbnailSrc)}" alt="${escapeAttribute(item.name)}" loading="lazy">
+      </span>
+      <span class="preview-thumb-label">${escapeHtml(item.name)}</span>
+    `;
+    button.addEventListener("click", () => {
+      state.previewIndex = index;
+      renderPreview();
+      button.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    });
+    elements.previewThumbs.appendChild(button);
+  });
+
+  const activeThumb = elements.previewThumbs.querySelector(".preview-thumb.is-active");
+  if (activeThumb) {
+    activeThumb.scrollIntoView({ block: "nearest", inline: "center" });
+  }
+}
+
+function showPreviousPreview() {
+  if (state.previewIndex <= 0) {
+    return;
+  }
+
+  state.previewIndex -= 1;
+  renderPreview();
+}
+
+function showNextPreview() {
+  if (state.previewIndex >= state.previewItems.length - 1) {
+    return;
+  }
+
+  state.previewIndex += 1;
+  renderPreview();
+}
+
+function handlePreviewBackdropClick(event) {
+  if (event.target instanceof HTMLElement && event.target.dataset.previewClose === "true") {
+    closePreview();
+  }
+}
+
+function handleDocumentKeydown(event) {
+  if (elements.previewModal.hidden) {
+    return;
+  }
+
+  if (event.key === "Escape") {
+    closePreview();
+    return;
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    showPreviousPreview();
+    return;
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    showNextPreview();
+  }
 }
 
 function renderBreadcrumbs(segments) {
@@ -316,6 +469,7 @@ function renderBreadcrumbs(segments) {
     button.textContent = segment.name;
     if (!isLast) {
       button.addEventListener("click", () => {
+        closePreview();
         state.currentFolderId = segment.id;
         state.isSearchMode = false;
         elements.searchInput.value = "";
@@ -373,6 +527,7 @@ function renderError(text) {
 }
 
 function renderEmptyState(text) {
+  state.visibleImages = [];
   elements.gallery.innerHTML = `
     <div class="empty-state">
       <p>${escapeHtml(text)}</p>
