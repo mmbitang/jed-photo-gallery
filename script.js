@@ -219,7 +219,10 @@ function getThumbnailSrc(item) {
 }
 
 function getPreviewSrc(item) {
-  return `https://drive.google.com/uc?export=view&id=${item.id}`;
+  if (item.thumbnailLink) {
+    return item.thumbnailLink.replace(/=s\d+$/, "=s2400");
+  }
+  return `https://drive.google.com/thumbnail?id=${item.id}&sz=w2400`;
 }
 
 function getDownloadSrc(item) {
@@ -558,3 +561,5 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
+
+
